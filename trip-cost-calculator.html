@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trip Cost Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 24px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: #111;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+            border: 1px solid #e5e5e5;
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #111;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 12px;
+            margin-bottom: 12px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+            background: #fafafa;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #333;
+            background: #fff;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-add {
+            background: #111;
+            color: #fff;
+        }
+
+        .btn-add:hover {
+            background: #333;
+        }
+
+        .btn-primary {
+            background: #111;
+            color: #fff;
+            flex: 1;
+            padding: 12px;
+        }
+
+        .btn-primary:hover {
+            background: #333;
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: #c0392b;
+            padding: 6px 8px;
+            font-size: 0.8rem;
+        }
+
+        .btn-danger:hover {
+            background: #fdf2f2;
+        }
+
+        .btn-edit {
+            background: transparent;
+            color: #666;
+            padding: 6px 8px;
+            font-size: 0.8rem;
+        }
+
+        .btn-edit:hover {
+            background: #f5f5f5;
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        .btn-reset:hover {
+            background: #f5f5f5;
+        }
+
+        .btn-clear {
+            background: transparent;
+            color: #c0392b;
+            border: 1px solid #f5c6cb;
+        }
+
+        .btn-clear:hover {
+            background: #fdf2f2;
+        }
+
+        .people-list {
+            max-height: 280px;
+            overflow-y: auto;
+            margin-top: 12px;
+        }
+
+        .person-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto auto auto;
+            gap: 12px;
+            align-items: center;
+            padding: 12px;
+            background: #fafafa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #eee;
+        }
+
+        .person-item.fixed-cost {
+            background: #fffbeb;
+            border-color: #fcd34d;
+        }
+
+        .person-number {
+            font-weight: 600;
+            color: #666;
+            font-size: 0.85rem;
+            min-width: 50px;
+        }
+
+        .person-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .person-name {
+            font-weight: 500;
+            color: #111;
+            font-size: 0.95rem;
+        }
+
+        .person-distance {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .person-fixed {
+            font-size: 0.75rem;
+            color: #b45309;
+            font-weight: 500;
+        }
+
+        .fixed-input {
+            width: 80px;
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            text-align: right;
+            background: #fff;
+        }
+
+        .fixed-input:focus {
+            outline: none;
+            border-color: #f59e0b;
+        }
+
+        .checkbox-fixed {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .checkbox-fixed input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #f59e0b;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 4px;
+        }
+
+        .expense-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .summary-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+        }
+
+        .summary-item {
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .summary-label { font-size: 0.75rem; color: #888; margin-bottom: 4px; }
+        .summary-value { font-size: 1.1rem; font-weight: 600; color: #111; }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .results-section { display: none; }
+        .results-section.show { display: block; }
+
+        .cost-summary-box {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #eee;
+        }
+
+        .cost-summary-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            text-align: center;
+        }
+
+        .cost-summary-item {
+            padding: 12px;
+            border-radius: 6px;
+            background: #fff;
+            border: 1px solid #eee;
+        }
+
+        .cost-summary-label { font-size: 0.7rem; color: #888; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+        .cost-summary-value { font-size: 1.2rem; font-weight: 600; color: #111; }
+
+        .split-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+        }
+
+        .split-table th {
+            background: #fafafa;
+            color: #666;
+            padding: 12px;
+            text-align: left;
+            font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .split-table th:last-child {
+            text-align: right;
+        }
+
+        .split-table td {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .split-table td:last-child {
+            text-align: right;
+            font-weight: 500;
+        }
+
+        .split-table tr.fixed-row {
+            background: #fffbeb;
+        }
+
+        .split-table tr.total-row {
+            background: #f0fdf4;
+            font-weight: 600;
+        }
+
+        .split-table .distance-cell {
+            color: #666;
+        }
+
+        .split-table .fixed-badge {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .split-table .amount-cell {
+            font-size: 1rem;
+            color: #111;
+        }
+
+        .trip-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 12px;
+            background: #fafafa;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .trip-info strong { color: #111; }
+
+        .verify-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 16px;
+        }
+
+        .verify-title { 
+            font-weight: 600; 
+            color: #166534; 
+            margin-bottom: 8px; 
+            font-size: 0.85rem; 
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+            font-size: 0.85rem;
+            color: #166534;
+        }
+
+        .segment-box {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 16px;
+            border: 1px solid #eee;
+        }
+
+        .segment-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+        }
+
+        .segment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: #fff;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            border: 1px solid #eee;
+            font-size: 0.85rem;
+        }
+
+        .segment-badge {
+            background: #e5e5e5;
+            color: #333;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-right: 4px;
+        }
+
+        .segment-cost { 
+            font-weight: 500; 
+            color: #111; 
+        }
+
+        .result-card {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 10px;
+            border: 1px solid #eee;
+        }
+
+        .result-card.fixed-cost {
+            background: #fffbeb;
+            border-color: #fcd34d;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .result-person {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .result-number {
+            width: 32px;
+            height: 32px;
+            background: #111;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .result-number.fixed {
+            background: #f59e0b;
+        }
+
+        .result-name { font-size: 1rem; font-weight: 500; color: #111; }
+        .result-distance { font-size: 0.8rem; color: #888; }
+        .result-fixed-label { font-size: 0.75rem; color: #b45309; font-weight: 500; }
+
+        .result-amount { text-align: right; }
+
+        .result-share {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #111;
+        }
+
+        .result-percent { font-size: 0.8rem; color: #888; }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e5e5e5;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #333;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.fixed {
+            background: #f59e0b;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 24px;
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .saved-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            color: #22c55e;
+            margin-left: 8px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .saved-indicator.show {
+            opacity: 1;
+        }
+
+        .edit-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .edit-modal.show {
+            display: flex;
+        }
+
+        .edit-modal-content {
+            background: #fff;
+            padding: 24px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 360px;
+        }
+
+        .edit-modal-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #111;
+            margin-bottom: 16px;
+        }
+
+        .edit-modal-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .edit-modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .edit-modal-actions .btn {
+            flex: 1;
+        }
+
+        @media (max-width: 600px) {
+            .form-row, .expense-row, .summary-bar, .cost-summary-row {
+                grid-template-columns: 1fr;
+            }
+            .person-item {
+                grid-template-columns: auto 1fr auto;
+                gap: 8px;
+            }
+            .checkbox-fixed {
+                grid-column: 2;
+            }
+            .fixed-input {
+                grid-column: 2;
+            }
+            .action-btns {
+                grid-column: 3;
+                grid-row: 1 / 3;
+            }
+            .header h1 { font-size: 1.4rem; }
+            .result-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+            .result-amount { text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Trip Cost Calculator</h1>
+            <p>Split costs fairly based on distance traveled <span class="saved-indicator" id="savedIndicator">✓ saved</span></p>
+        </div>
+
+        <!-- Expenses -->
+        <div class="card">
+            <div class="card-title">Trip Expenses</div>
+            <div class="expense-row">
+                <div class="form-group">
+                    <label>Petrol Price ($)</label>
+                    <input type="number" id="petrolPrice" placeholder="0.00" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Toll Count</label>
+                    <input type="number" id="tollCount" placeholder="0" min="0" step="1">
+                </div>
+                <div class="form-group">
+                    <label>Price per Toll ($)</label>
+                    <input type="number" id="tollPrice" value="15" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Max Distance (km)</label>
+                    <input type="number" id="maxDistance" placeholder="500" min="0" step="1">
+                </div>
+            </div>
+            <div class="summary-bar">
+                <div class="summary-item">
+                    <div class="summary-label">Petrol</div>
+                    <div class="summary-value" id="summaryPetrol">$0.00</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Tolls</div>
+                    <div class="summary-value" id="summaryTolls">$0.00</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Total</div>
+                    <div class="summary-value" id="summaryTotal">$0.00</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add People -->
+        <div class="card">
+            <div class="card-title">People</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="personName" placeholder="Enter name">
+                </div>
+                <div class="form-group">
+                    <label>Distance (km)</label>
+                    <input type="number" id="personDistance" placeholder="e.g., 100" min="0" step="1">
+                </div>
+                <button class="btn btn-add" onclick="addPerson()">+ Add</button>
+            </div>
+            <div class="people-list" id="peopleList">
+                <div class="no-data">No people added yet</div>
+            </div>
+        </div>
+
+        <!-- Calculate -->
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="calculateCosts()">Calculate Split</button>
+            <button class="btn btn-reset" onclick="resetAll()">Reset</button>
+            <button class="btn btn-clear" onclick="clearAllData()">Clear Cache</button>
+        </div>
+
+        <!-- Results -->
+        <div class="card results-section" id="resultsSection">
+            <div class="card-title">Results</div>
+
+            <!-- Cost Summary -->
+            <div class="cost-summary-box">
+                <div class="cost-summary-row">
+                    <div class="cost-summary-item">
+                        <div class="cost-summary-label">Total Cost</div>
+                        <div class="cost-summary-value" id="resultTotal">$0.00</div>
+                    </div>
+                    <div class="cost-summary-item">
+                        <div class="cost-summary-label">Fixed</div>
+                        <div class="cost-summary-value" id="resultFixed">$0.00</div>
+                    </div>
+                    <div class="cost-summary-item">
+                        <div class="cost-summary-label">To Split</div>
+                        <div class="cost-summary-value" id="resultRemaining">$0.00</div>
+                    </div>
+                    <div class="cost-summary-item">
+                        <div class="cost-summary-label">Per KM</div>
+                        <div class="cost-summary-value" id="resultCostPerKm">$0.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="trip-info">
+                Max Distance: <strong id="resultMaxDist">0</strong> km
+            </div>
+
+            <!-- Split Table -->
+            <div class="segment-title">Cost Split</div>
+            <table class="split-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>Distance</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="splitTableBody">
+                </tbody>
+            </table>
+
+            <!-- Verification -->
+            <div class="verify-box">
+                <div class="verify-title">Verification</div>
+                <div id="verifyList"></div>
+            </div>
+
+            <!-- Segment Breakdown -->
+            <div class="segment-box">
+                <div class="segment-title">How Remaining is Split</div>
+                <div id="segmentList"></div>
+            </div>
+
+            <div class="card-title" style="margin-top: 16px;">Individual Summary</div>
+            <div id="resultsList"></div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="edit-modal" id="editModal">
+        <div class="edit-modal-content">
+            <div class="edit-modal-title">Edit Person</div>
+            <div class="edit-modal-row">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="editName">
+                </div>
+                <div class="form-group">
+                    <label>Distance (km)</label>
+                    <input type="number" id="editDistance" min="0" step="1">
+                </div>
+            </div>
+            <div class="edit-modal-actions">
+                <button class="btn btn-reset" onclick="closeEditModal()">Cancel</button>
+                <button class="btn btn-add" onclick="saveEdit()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let people = [];
+        let editingId = null;
+
+        // ============================================
+        // LOCAL STORAGE FUNCTIONS
+        // ============================================
+        
+        const STORAGE_KEY = 'tripCostCalculatorData';
+
+        function saveToStorage() {
+            const data = {
+                people: people,
+                petrolPrice: document.getElementById('petrolPrice').value,
+                tollCount: document.getElementById('tollCount').value,
+                tollPrice: document.getElementById('tollPrice').value,
+                maxDistance: document.getElementById('maxDistance').value
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            
+            // Show saved indicator
+            const indicator = document.getElementById('savedIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 1500);
+        }
+
+        function loadFromStorage() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    
+                    if (data.people && Array.isArray(data.people)) {
+                        people = data.people;
+                    }
+                    if (data.petrolPrice) {
+                        document.getElementById('petrolPrice').value = data.petrolPrice;
+                    }
+                    if (data.tollCount) {
+                        document.getElementById('tollCount').value = data.tollCount;
+                    }
+                    if (data.tollPrice) {
+                        document.getElementById('tollPrice').value = data.tollPrice;
+                    }
+                    if (data.maxDistance) {
+                        document.getElementById('maxDistance').value = data.maxDistance;
+                    }
+                    
+                    return true;
+                } catch (e) {
+                    console.error('Error loading saved data:', e);
+                }
+            }
+            return false;
+        }
+
+        function clearStorage() {
+            localStorage.removeItem(STORAGE_KEY);
+        }
+
+        // ============================================
+        // MAIN FUNCTIONS
+        // ============================================
+
+        function addPerson() {
+            const name = document.getElementById('personName').value.trim();
+            const distance = parseFloat(document.getElementById('personDistance').value);
+
+            if (!name) {
+                alert('Please enter a name');
+                return;
+            }
+            if (isNaN(distance) || distance <= 0) {
+                alert('Please enter a valid distance');
+                return;
+            }
+
+            people.push({
+                id: Date.now(),
+                name: name,
+                distance: distance,
+                isFixed: false,
+                fixedAmount: 0
+            });
+
+            document.getElementById('personName').value = '';
+            document.getElementById('personDistance').value = '';
+            document.getElementById('personName').focus();
+
+            renderPeopleList();
+            hideResults();
+            saveToStorage();
+        }
+
+        function removePerson(id) {
+            people = people.filter(p => p.id !== id);
+            renderPeopleList();
+            hideResults();
+            saveToStorage();
+        }
+
+        function openEditModal(id) {
+            const person = people.find(p => p.id === id);
+            if (!person) return;
+
+            editingId = id;
+            document.getElementById('editName').value = person.name;
+            document.getElementById('editDistance').value = person.distance;
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('show');
+            editingId = null;
+        }
+
+        function saveEdit() {
+            if (editingId === null) return;
+
+            const name = document.getElementById('editName').value.trim();
+            const distance = parseFloat(document.getElementById('editDistance').value);
+
+            if (!name || isNaN(distance) || distance <= 0) {
+                alert('Please enter valid name and distance');
+                return;
+            }
+
+            const person = people.find(p => p.id === editingId);
+            if (person) {
+                person.name = name;
+                person.distance = distance;
+            }
+
+            closeEditModal();
+            renderPeopleList();
+            hideResults();
+            saveToStorage();
+        }
+
+        function toggleFixed(id, checkbox) {
+            const person = people.find(p => p.id === id);
+            if (person) {
+                person.isFixed = checkbox.checked;
+                if (!person.isFixed) {
+                    person.fixedAmount = 0;
+                }
+            }
+            renderPeopleList();
+            saveToStorage();
+        }
+
+        function updateFixedAmount(id, input) {
+            const person = people.find(p => p.id === id);
+            if (person) {
+                person.fixedAmount = parseFloat(input.value) || 0;
+                saveToStorage();
+            }
+        }
+
+        function renderPeopleList() {
+            const list = document.getElementById('peopleList');
+            
+            if (people.length === 0) {
+                list.innerHTML = '<div class="no-data">No people added yet</div>';
+                return;
+            }
+
+            const sorted = [...people].sort((a, b) => b.distance - a.distance);
+            
+            let html = '';
+            sorted.forEach((person) => {
+                const fixedClass = person.isFixed ? 'fixed-cost' : '';
+                html += `
+                    <div class="person-item ${fixedClass}">
+                        <div class="person-number">${person.distance} km</div>
+                        <div class="person-info">
+                            <div class="person-name">${person.name}</div>
+                            ${person.isFixed ? `<div class="person-fixed">Fixed: $${person.fixedAmount.toFixed(2)}</div>` : ''}
+                        </div>
+                        <div class="checkbox-fixed">
+                            <input type="checkbox" ${person.isFixed ? 'checked' : ''} onchange="toggleFixed(${person.id}, this)">
+                            Fixed
+                        </div>
+                        ${person.isFixed ? `<input type="number" class="fixed-input" value="${person.fixedAmount || ''}" placeholder="$" oninput="updateFixedAmount(${person.id}, this)">` : '<div></div>'}
+                        <div class="action-btns">
+                            <button class="btn btn-edit" onclick="openEditModal(${person.id})">Edit</button>
+                            <button class="btn btn-danger" onclick="removePerson(${person.id})">Remove</button>
+                        </div>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        }
+
+        function updateSummary() {
+            const petrol = parseFloat(document.getElementById('petrolPrice').value) || 0;
+            const tollCount = parseInt(document.getElementById('tollCount').value) || 0;
+            const tollPrice = parseFloat(document.getElementById('tollPrice').value) || 15;
+            const tollCost = tollCount * tollPrice;
+            const total = petrol + tollCost;
+
+            document.getElementById('summaryPetrol').textContent = '$' + petrol.toFixed(2);
+            document.getElementById('summaryTolls').textContent = '$' + tollCost.toFixed(2);
+            document.getElementById('summaryTotal').textContent = '$' + total.toFixed(2);
+        }
+
+        function calculateCosts() {
+            if (people.length === 0) {
+                alert('Please add at least one person');
+                return;
+            }
+
+            const petrol = parseFloat(document.getElementById('petrolPrice').value) || 0;
+            const tollCount = parseInt(document.getElementById('tollCount').value) || 0;
+            const tollPrice = parseFloat(document.getElementById('tollPrice').value) || 15;
+            const maxDistance = parseFloat(document.getElementById('maxDistance').value) || 0;
+
+            if (petrol <= 0 && tollCount <= 0) {
+                alert('Please enter trip expenses');
+                return;
+            }
+
+            const actualMaxDistance = maxDistance > 0 ? maxDistance : Math.max(...people.map(p => p.distance));
+            
+            if (actualMaxDistance <= 0) {
+                alert('Please enter the maximum distance');
+                return;
+            }
+
+            const tollCost = tollCount * tollPrice;
+            const totalCost = petrol + tollCost;
+
+            const totalFixed = people.filter(p => p.isFixed).reduce((sum, p) => sum + (p.fixedAmount || 0), 0);
+            const remainingCost = totalCost - totalFixed;
+
+            if (remainingCost < 0) {
+                alert('Fixed amounts exceed total cost!');
+                return;
+            }
+
+            const nonFixedPeople = people.filter(p => !p.isFixed);
+            
+            let costPerKm = 0;
+            let segments = [];
+            let personCosts = {};
+
+            people.forEach(p => {
+                personCosts[p.id] = {
+                    name: p.name,
+                    distance: p.distance,
+                    totalCost: p.isFixed ? p.fixedAmount : 0,
+                    isFixed: p.isFixed,
+                    fixedAmount: p.fixedAmount,
+                    segments: []
+                };
+            });
+
+            if (nonFixedPeople.length > 0 && remainingCost > 0) {
+                costPerKm = remainingCost / actualMaxDistance;
+
+                const sortedNonFixed = [...nonFixedPeople].sort((a, b) => b.distance - a.distance);
+                const distancePoints = [0, ...new Set(sortedNonFixed.map(p => p.distance))].sort((a, b) => a - b);
+                
+                for (let i = 0; i < distancePoints.length - 1; i++) {
+                    const segStart = distancePoints[i];
+                    const segEnd = distancePoints[i + 1];
+                    const segDistance = segEnd - segStart;
+                    
+                    const travelers = sortedNonFixed.filter(p => p.distance >= segEnd);
+                    
+                    if (travelers.length > 0 && segDistance > 0) {
+                        const segCost = segDistance * costPerKm;
+                        segments.push({
+                            start: segStart,
+                            end: segEnd,
+                            distance: segDistance,
+                            travelers: travelers.map(t => t.name),
+                            numTravelers: travelers.length,
+                            totalCost: segCost,
+                            costPerPerson: segCost / travelers.length
+                        });
+                    }
+                }
+
+                segments.forEach(seg => {
+                    seg.travelers.forEach(name => {
+                        const person = people.find(p => p.name === name && !p.isFixed);
+                        if (person && personCosts[person.id]) {
+                            personCosts[person.id].totalCost += seg.costPerPerson;
+                            personCosts[person.id].segments.push({
+                                from: seg.start,
+                                to: seg.end,
+                                cost: seg.costPerPerson
+                            });
+                        }
+                    });
+                });
+            }
+
+            document.getElementById('resultTotal').textContent = '$' + totalCost.toFixed(2);
+            document.getElementById('resultFixed').textContent = '$' + totalFixed.toFixed(2);
+            document.getElementById('resultRemaining').textContent = '$' + remainingCost.toFixed(2);
+            document.getElementById('resultMaxDist').textContent = actualMaxDistance.toFixed(0);
+            document.getElementById('resultCostPerKm').textContent = '$' + (costPerKm || 0).toFixed(3);
+
+            const sortedPeople = [...people].sort((a, b) => b.distance - a.distance);
+            let tableHtml = '';
+            let index = 1;
+            
+            sortedPeople.filter(p => p.isFixed).forEach(person => {
+                tableHtml += `
+                    <tr class="fixed-row">
+                        <td>${index++}</td>
+                        <td>${person.name}</td>
+                        <td class="distance-cell">${person.distance} km</td>
+                        <td><span class="fixed-badge">Fixed</span></td>
+                        <td class="amount-cell">$${person.fixedAmount.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            sortedPeople.filter(p => !p.isFixed).forEach(person => {
+                const cost = personCosts[person.id] ? personCosts[person.id].totalCost : 0;
+                tableHtml += `
+                    <tr>
+                        <td>${index++}</td>
+                        <td>${person.name}</td>
+                        <td class="distance-cell">${person.distance} km</td>
+                        <td>Split</td>
+                        <td class="amount-cell">$${cost.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            const totalCalculated = Object.values(personCosts).reduce((sum, p) => sum + p.totalCost, 0);
+            tableHtml += `
+                <tr class="total-row">
+                    <td></td>
+                    <td><strong>TOTAL</strong></td>
+                    <td></td>
+                    <td></td>
+                    <td class="amount-cell">$${totalCalculated.toFixed(2)}</td>
+                </tr>
+            `;
+            
+            document.getElementById('splitTableBody').innerHTML = tableHtml;
+
+            const diff = Math.abs(totalCalculated - totalCost);
+            
+            let verifyHtml = `
+                <div class="check-item">
+                    ${diff < 0.01 ? '✓' : '✗'} Total shares ($${totalCalculated.toFixed(2)}) = Total cost ($${totalCost.toFixed(2)})
+                </div>
+                <div class="check-item">
+                    ✓ Fixed: $${totalFixed.toFixed(2)} (${people.filter(p => p.isFixed).length} people)
+                </div>
+                <div class="check-item">
+                    ✓ Split: $${remainingCost.toFixed(2)} (${nonFixedPeople.length} people)
+                </div>
+            `;
+            document.getElementById('verifyList').innerHTML = verifyHtml;
+
+            let segHtml = '';
+            if (segments.length > 0) {
+                segments.forEach(seg => {
+                    segHtml += `
+                        <div class="segment-item">
+                            <div>
+                                ${seg.start}-${seg.end} km (${seg.distance} km)
+                                <br>
+                                ${seg.travelers.map(t => `<span class="segment-badge">${t}</span>`).join('')}
+                            </div>
+                            <div class="segment-cost">$${seg.costPerPerson.toFixed(2)} each</div>
+                        </div>
+                    `;
+                });
+            } else if (nonFixedPeople.length === 0) {
+                segHtml = '<div style="text-align:center; color:#888; padding:8px; font-size:0.85rem;">All costs are fixed amounts</div>';
+            } else {
+                segHtml = '<div style="text-align:center; color:#888; padding:8px; font-size:0.85rem;">No remaining cost to split</div>';
+            }
+            document.getElementById('segmentList').innerHTML = segHtml;
+
+            const sortedResults = Object.values(personCosts).sort((a, b) => b.totalCost - a.totalCost);
+            
+            let html = '';
+            sortedResults.forEach((person, idx) => {
+                const percentage = totalCost > 0 ? (person.totalCost / totalCost) * 100 : 0;
+                const fixedClass = person.isFixed ? 'fixed-cost' : '';
+                
+                html += `
+                    <div class="result-card ${fixedClass}">
+                        <div class="result-header">
+                            <div class="result-person">
+                                <div class="result-number ${person.isFixed ? 'fixed' : ''}">${idx + 1}</div>
+                                <div>
+                                    <div class="result-name">${person.name}</div>
+                                    <div class="result-distance">${person.distance} km</div>
+                                    ${person.isFixed ? '<div class="result-fixed-label">Fixed Amount</div>' : ''}
+                                </div>
+                            </div>
+                            <div class="result-amount">
+                                <div class="result-share">$${person.totalCost.toFixed(2)}</div>
+                                <div class="result-percent">${percentage.toFixed(1)}%</div>
+                            </div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill ${person.isFixed ? 'fixed' : ''}" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('resultsList').innerHTML = html;
+            document.getElementById('resultsSection').classList.add('show');
+            
+            // Save results state too
+            saveToStorage();
+        }
+
+        function hideResults() {
+            document.getElementById('resultsSection').classList.remove('show');
+        }
+
+        function resetAll() {
+            people = [];
+            document.getElementById('personName').value = '';
+            document.getElementById('personDistance').value = '';
+            document.getElementById('petrolPrice').value = '';
+            document.getElementById('tollCount').value = '';
+            document.getElementById('tollPrice').value = '15';
+            document.getElementById('maxDistance').value = '';
+            renderPeopleList();
+            hideResults();
+            updateSummary();
+            saveToStorage();
+        }
+
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear all cached data?')) {
+                resetAll();
+                clearStorage();
+            }
+        }
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+
+        ['petrolPrice', 'tollCount', 'tollPrice', 'maxDistance'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                updateSummary();
+                hideResults();
+                saveToStorage();
+            });
+        });
+
+        ['personName', 'personDistance'].forEach(id => {
+            document.getElementById(id).addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addPerson();
+            });
+        });
+
+        document.getElementById('editModal').addEventListener('click', (e) => {
+            if (e.target.id === 'editModal') closeEditModal();
+        });
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        // Load saved data on page load
+        loadFromStorage();
+        renderPeopleList();
+        updateSummary();
+    </script>
+</body>
+</html>
