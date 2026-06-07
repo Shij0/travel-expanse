@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trip Cost Calculator</title>
+    <meta name="description" content="Calculate and split trip costs fairly by distance, plus track food expenses with per-meal GST.">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --surface2: #222535;
+            --surface3: #2a2e42;
+            --border: #2e3248;
+            --border2: #383d5a;
+            --text: #e8eaf0;
+            --text2: #9ca3bb;
+            --text3: #636a88;
+            --accent: #6366f1;
+            --accent2: #818cf8;
+            --accent-glow: rgba(99,102,241,0.15);
+            --success: #22c55e;
+            --success-bg: rgba(34,197,94,0.1);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245,158,11,0.1);
+            --danger: #ef4444;
+            --danger-bg: rgba(239,68,68,0.1);
+            --breakfast: #f97316;
+            --lunch: #10b981;
+            --tea: #a78bfa;
+            --dinner: #38bdf8;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Inter',sans-serif; background:var(--bg); min-height:100vh; color:var(--text); }
+
+        /* Shell */
+        .app-shell { display:flex; flex-direction:column; min-height:100vh; }
+
+        /* Header */
+        .app-header {
+            background:var(--surface); border-bottom:1px solid var(--border);
+            padding:14px 28px; display:flex; align-items:center;
+            justify-content:space-between; position:sticky; top:0; z-index:100;
+        }
+        .app-logo { display:flex; align-items:center; gap:10px; }
+        .app-logo-icon { width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px; }
+        .app-logo h1 { font-size:1.1rem;font-weight:700;color:var(--text); }
+        .app-logo p  { font-size:0.72rem;color:var(--text3); }
+        .saved-indicator { display:inline-flex;align-items:center;gap:4px;font-size:0.7rem;color:var(--success);opacity:0;transition:opacity 0.3s; }
+        .saved-indicator.show { opacity:1; }
+
+        /* Tabs */
+        .tab-bar { display:flex;gap:2px;background:var(--bg);padding:0 28px;border-bottom:1px solid var(--border); }
+        .tab-btn {
+            padding:13px 20px;background:transparent;border:none;
+            border-bottom:2px solid transparent;color:var(--text3);
+            font-size:0.875rem;font-weight:500;cursor:pointer;transition:all 0.2s;
+            display:flex;align-items:center;gap:8px;margin-bottom:-1px;
+            font-family:'Inter',sans-serif;
+        }
+        .tab-btn:hover { color:var(--text2); }
+        .tab-btn.active { color:var(--accent2);border-bottom-color:var(--accent); }
+        .tab-badge { background:var(--accent-glow);color:var(--accent2);border:1px solid rgba(99,102,241,0.3);border-radius:4px;font-size:0.62rem;font-weight:700;padding:1px 6px; }
+
+        /* Content */
+        .tab-content { flex:1;padding:24px 28px;max-width:1400px;margin:0 auto;width:100%; }
+
+        /* Cards */
+        .card { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:16px; }
+        .card-title { font-size:0.68rem;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px; }
+
+        /* Forms */
+        .form-row { display:grid;grid-template-columns:1fr 1fr auto;gap:12px;margin-bottom:12px;align-items:end; }
+        .form-group { display:flex;flex-direction:column;gap:6px; }
+        .form-group label { font-size:0.72rem;color:var(--text2);font-weight:500; }
+        .form-group input { padding:9px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;font-size:0.875rem;color:var(--text);font-family:'Inter',sans-serif;transition:all 0.2s; }
+        .form-group input:focus { outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow); }
+        .form-group input::placeholder { color:var(--text3); }
+
+        /* Buttons */
+        .btn { padding:9px 15px;border:none;border-radius:7px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:'Inter',sans-serif;white-space:nowrap; }
+        .btn-add { background:var(--accent);color:#fff; }
+        .btn-add:hover { background:var(--accent2);transform:translateY(-1px); }
+        .btn-primary { background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;flex:1;padding:12px;box-shadow:0 4px 14px rgba(99,102,241,0.3); }
+        .btn-primary:hover { transform:translateY(-1px);box-shadow:0 6px 18px rgba(99,102,241,0.4); }
+        .btn-danger { background:var(--danger-bg);color:var(--danger);border:1px solid rgba(239,68,68,0.2);padding:6px 9px;font-size:0.78rem; }
+        .btn-danger:hover { background:rgba(239,68,68,0.2); }
+        .btn-edit { background:var(--surface3);color:var(--text2);border:1px solid var(--border2);padding:6px 9px;font-size:0.78rem; }
+        .btn-ghost { background:transparent;color:var(--text2);border:1px solid var(--border2); }
+        .btn-ghost:hover { background:var(--surface2);color:var(--text); }
+        .btn-warning { background:var(--warning-bg);color:var(--warning);border:1px solid rgba(245,158,11,0.2);font-size:0.78rem;padding:7px 12px; }
+        .btn-warning:hover { background:rgba(245,158,11,0.2); }
+
+        /* Trip tab styles */
+        .expense-row { display:grid;grid-template-columns:repeat(4,1fr);gap:12px; }
+        .summary-bar { display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border); }
+        .summary-item { text-align:center;padding:12px;border-radius:9px;background:var(--surface2);border:1px solid var(--border); }
+        .summary-label { font-size:0.68rem;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px; }
+        .summary-value { font-size:1.15rem;font-weight:700;color:var(--text); }
+        .people-list { max-height:290px;overflow-y:auto;margin-top:12px; }
+        .people-list::-webkit-scrollbar { width:4px; }
+        .people-list::-webkit-scrollbar-thumb { background:var(--border2);border-radius:2px; }
+        .person-item { display:grid;grid-template-columns:auto 1fr auto auto auto auto;gap:10px;align-items:center;padding:11px 13px;background:var(--surface2);border-radius:9px;margin-bottom:7px;border:1px solid var(--border);transition:border-color 0.2s; }
+        .person-item:hover { border-color:var(--border2); }
+        .person-item.fixed-cost { background:rgba(245,158,11,0.05);border-color:rgba(245,158,11,0.2); }
+        .person-number { font-weight:700;color:var(--text3);font-size:0.78rem;min-width:52px;background:var(--surface3);padding:4px 8px;border-radius:5px;text-align:center; }
+        .person-info { display:flex;flex-direction:column; }
+        .person-name { font-weight:600;color:var(--text);font-size:0.9rem; }
+        .person-fixed { font-size:0.7rem;color:var(--warning);font-weight:600; }
+        .fixed-input { width:88px;padding:5px 9px;border:1px solid var(--border2);border-radius:6px;font-size:0.82rem;text-align:right;background:var(--surface);color:var(--text);font-family:'Inter',sans-serif; }
+        .fixed-input:focus { outline:none;border-color:var(--warning); }
+        .checkbox-fixed { display:flex;align-items:center;gap:5px;font-size:0.78rem;color:var(--text2);white-space:nowrap; }
+        .checkbox-fixed input { width:14px;height:14px;cursor:pointer;accent-color:var(--warning); }
+        .action-btns { display:flex;gap:5px; }
+        .button-group { display:flex;gap:11px;margin-top:14px; }
+        .cost-summary-box { background:var(--surface2);border-radius:9px;padding:16px;margin-bottom:16px;border:1px solid var(--border); }
+        .cost-summary-row { display:grid;grid-template-columns:repeat(4,1fr);gap:11px;text-align:center; }
+        .cost-summary-item { padding:12px;border-radius:7px;background:var(--surface);border:1px solid var(--border); }
+        .cost-summary-label { font-size:0.63rem;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px; }
+        .cost-summary-value { font-size:1.2rem;font-weight:700;color:var(--text); }
+        .split-table { width:100%;border-collapse:collapse;margin-bottom:16px;font-size:0.85rem; }
+        .split-table th { background:var(--surface2);color:var(--text3);padding:11px 13px;text-align:left;font-weight:600;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border); }
+        .split-table th:last-child { text-align:right; }
+        .split-table td { padding:11px 13px;border-bottom:1px solid var(--border);color:var(--text2); }
+        .split-table td:last-child { text-align:right;font-weight:600;color:var(--text); }
+        .split-table tr.fixed-row td { background:rgba(245,158,11,0.04); }
+        .split-table tr.total-row td { background:rgba(34,197,94,0.06);font-weight:700;color:var(--success); }
+        .fixed-badge { background:var(--warning-bg);color:var(--warning);border:1px solid rgba(245,158,11,0.2);padding:2px 7px;border-radius:4px;font-size:0.63rem;font-weight:700; }
+        .trip-info { display:flex;align-items:center;justify-content:center;gap:16px;padding:12px;background:var(--surface2);border-radius:9px;margin-bottom:16px;font-size:0.85rem;color:var(--text2);border:1px solid var(--border); }
+        .trip-info strong { color:var(--accent2); }
+        .verify-box { background:var(--success-bg);border:1px solid rgba(34,197,94,0.2);border-radius:9px;padding:13px 15px;margin-bottom:16px; }
+        .verify-title { font-weight:700;color:var(--success);margin-bottom:8px;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px; }
+        .check-item { display:flex;align-items:center;gap:8px;padding:3px 0;font-size:0.82rem;color:var(--success); }
+        .segment-box { background:var(--surface2);border-radius:9px;padding:14px;margin-bottom:16px;border:1px solid var(--border); }
+        .segment-title { font-weight:700;color:var(--text2);margin-bottom:10px;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px; }
+        .segment-item { display:flex;justify-content:space-between;align-items:center;padding:9px 13px;background:var(--surface);border-radius:7px;margin-bottom:5px;border:1px solid var(--border);font-size:0.82rem; }
+        .segment-badge { background:var(--surface3);color:var(--text2);border:1px solid var(--border2);padding:2px 7px;border-radius:4px;font-size:0.68rem;font-weight:600;margin-right:3px; }
+        .segment-cost { font-weight:700;color:var(--accent2); }
+        .result-card { background:var(--surface2);border-radius:9px;padding:14px;margin-bottom:9px;border:1px solid var(--border); }
+        .result-card.fixed-cost { background:rgba(245,158,11,0.05);border-color:rgba(245,158,11,0.15); }
+        .result-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:10px; }
+        .result-person { display:flex;align-items:center;gap:11px; }
+        .result-number { width:32px;height:32px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.82rem; }
+        .result-number.fixed { background:var(--warning); }
+        .result-name { font-size:0.95rem;font-weight:600;color:var(--text); }
+        .result-distance { font-size:0.72rem;color:var(--text3); }
+        .result-fixed-label { font-size:0.68rem;color:var(--warning);font-weight:700;text-transform:uppercase; }
+        .result-amount { text-align:right; }
+        .result-share { font-size:1.5rem;font-weight:700;color:var(--text); }
+        .result-percent { font-size:0.75rem;color:var(--text3); }
+        .progress-bar { width:100%;height:5px;background:var(--surface3);border-radius:3px;overflow:hidden; }
+        .progress-fill { height:100%;background:var(--accent);border-radius:3px;transition:width 0.5s ease; }
+        .progress-fill.fixed { background:var(--warning); }
+        .no-data { text-align:center;padding:24px;color:var(--text3);font-size:0.85rem; }
+        .edit-modal { display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(4px); }
+        .edit-modal.show { display:flex; }
+        .edit-modal-content { background:var(--surface);padding:26px;border-radius:14px;width:90%;max-width:360px;border:1px solid var(--border2);box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+        .edit-modal-title { font-size:0.95rem;font-weight:700;color:var(--text);margin-bottom:16px; }
+        .edit-modal-row { display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px; }
+        .edit-modal-actions { display:flex;gap:9px;margin-top:16px; }
+        .edit-modal-actions .btn { flex:1; }
+
+        /* ═══════════════════════════════════
+           FOOD TAB
+        ═══════════════════════════════════ */
+
+        /* Column toggle bar */
+        .food-toolbar {
+            display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+            background:var(--surface);border:1px solid var(--border);
+            border-radius:12px;padding:14px 18px;margin-bottom:16px;
+        }
+        .toolbar-label { font-size:0.72rem;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px; }
+        .meal-toggle-btn {
+            display:flex;align-items:center;gap:6px;
+            padding:6px 13px;border-radius:7px;
+            border:1px solid var(--border2);background:var(--surface2);
+            color:var(--text3);font-size:0.78rem;font-weight:600;
+            cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;
+        }
+        .meal-toggle-btn.active.breakfast { background:rgba(249,115,22,0.12);border-color:rgba(249,115,22,0.4);color:var(--breakfast); }
+        .meal-toggle-btn.active.lunch     { background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.4);color:var(--lunch); }
+        .meal-toggle-btn.active.tea       { background:rgba(167,139,250,0.12);border-color:rgba(167,139,250,0.4);color:var(--tea); }
+        .meal-toggle-btn.active.dinner    { background:rgba(56,189,248,0.12);border-color:rgba(56,189,248,0.4);color:var(--dinner); }
+        .meal-dot { width:7px;height:7px;border-radius:50%; }
+        .meal-dot.breakfast { background:var(--breakfast); }
+        .meal-dot.lunch     { background:var(--lunch); }
+        .meal-dot.tea       { background:var(--tea); }
+        .meal-dot.dinner    { background:var(--dinner); }
+        .toolbar-divider { width:1px;height:24px;background:var(--border2);margin:0 4px; }
+
+        /* Excel wrapper */
+        .excel-wrap { background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+        .excel-scroll { overflow-x:auto; }
+        .excel-scroll::-webkit-scrollbar { height:5px; }
+        .excel-scroll::-webkit-scrollbar-thumb { background:var(--border2);border-radius:2px; }
+
+        /* Table */
+        .etable { width:100%;border-collapse:collapse;font-size:0.84rem;min-width:800px; }
+
+        /* ── Header ── */
+        .etable thead tr.head-row th {
+            background:var(--surface2);
+            border-right:1px solid var(--border);
+            border-bottom:2px solid var(--border2);
+            padding:0; vertical-align:top;
+        }
+        .etable thead tr.head-row th:last-child { border-right:none; }
+
+        /* th inner wrapper */
+        .th-box { display:flex;flex-direction:column;padding:10px 12px 8px; gap:6px; }
+        .th-name { display:flex;align-items:center;gap:6px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px; }
+        .th-name.col-name     { color:var(--text2); }
+        .th-name.col-dist     { color:var(--text3); }
+        .th-name.col-type     { color:var(--text3); }
+        .th-name.col-trip     { color:var(--warning); }
+        .th-name.col-food     { color:var(--accent2); }
+        .th-name.col-total    { color:var(--text); }
+        .th-name.col-break    { color:var(--text3); }
+        .th-name.breakfast    { color:var(--breakfast); }
+        .th-name.lunch        { color:var(--lunch); }
+        .th-name.tea          { color:var(--tea); }
+        .th-name.dinner       { color:var(--dinner); }
+        .th-hint { font-size:0.6rem;color:var(--text3);font-weight:400; }
+
+        /* Per-column GST control inside header */
+        .th-gst-ctrl {
+            display:flex; align-items:center; gap:6px;
+            background:var(--surface3);
+            border-radius:6px;
+            padding:4px 7px;
+            border:1px solid var(--border2);
+        }
+        .gst-chk-label {
+            display:flex;align-items:center;gap:4px;
+            font-size:0.62rem;font-weight:600;color:var(--text3);
+            cursor:pointer;user-select:none;white-space:nowrap;
+        }
+        .gst-chk-label input[type="checkbox"] { width:12px;height:12px;accent-color:var(--success);cursor:pointer; }
+        .gst-chk-label.on { color:var(--success); }
+        .gst-rate-box {
+            width:48px;padding:2px 5px;
+            background:var(--surface2);border:1px solid var(--border2);
+            border-radius:4px;font-size:0.68rem;color:var(--text);
+            font-family:'Inter',sans-serif;text-align:center;
+        }
+        .gst-rate-box:focus { outline:none;border-color:var(--success); }
+        .gst-pct-label { font-size:0.6rem;color:var(--text3); }
+        .gst-active-pill {
+            display:inline-flex;align-items:center;
+            background:rgba(34,197,94,0.12);
+            border:1px solid rgba(34,197,94,0.3);
+            border-radius:4px;padding:1px 5px;
+            font-size:0.58rem;font-weight:700;color:var(--success);
+            white-space:nowrap;
+        }
+
+        /* ── Body ── */
+        .etable tbody tr { transition:background 0.12s; }
+        .etable tbody tr:hover td { background:var(--surface3) !important; }
+        .etable tbody tr:nth-child(even) td { background:rgba(255,255,255,0.012); }
+        .etable td { border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:0;vertical-align:middle; }
+        .etable td:last-child { border-right:none; }
+        .etable tbody tr:last-child td { border-bottom:none; }
+
+        /* sticky name */
+        .td-sticky { position:sticky;left:0;z-index:1;background:var(--surface);min-width:140px; }
+        .etable tbody tr:hover .td-sticky { background:var(--surface3) !important; }
+        .name-inner { display:flex;align-items:center;gap:9px;padding:9px 12px; }
+        .name-avatar { width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;color:#fff;flex-shrink:0; }
+        .name-label { font-weight:600;color:var(--text);font-size:0.875rem; }
+
+        /* plain cells */
+        .td-plain { padding:9px 12px;color:var(--text2);font-size:0.82rem; }
+        .td-right { text-align:right; }
+        .type-fixed { color:var(--warning);font-weight:700;font-size:0.78rem; }
+        .type-split { color:var(--accent2);font-weight:700;font-size:0.78rem; }
+        .trip-val { color:var(--warning);font-weight:700;font-size:0.9rem; }
+
+        /* meal cell — holds base input + gst sub-row */
+        .td-meal { min-width:100px; }
+        .meal-cell-wrap { display:flex;flex-direction:column; }
+        .meal-inp {
+            display:block;width:100%;
+            padding:9px 11px;
+            background:transparent;border:none;
+            font-size:0.875rem;color:var(--text);font-family:'Inter',sans-serif;
+            text-align:right;transition:all 0.12s;
+        }
+        .meal-inp:focus { background:var(--surface2);outline:2px solid var(--accent);outline-offset:-2px; }
+        .meal-inp::placeholder { color:var(--text3); }
+        .gst-sub-row {
+            display:flex;align-items:center;justify-content:flex-end;
+            padding:1px 10px 6px;gap:4px;
+        }
+        .gst-sub-tag { font-size:0.6rem;font-weight:700;color:var(--success);background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);border-radius:3px;padding:1px 4px; }
+        .gst-sub-val { font-size:0.68rem;color:var(--success);font-weight:600; }
+
+        /* derived columns */
+        .td-foodsub  { min-width:90px; }
+        .td-grandtot { min-width:105px; }
+        .td-breakdown{ min-width:190px; }
+        .foodsub-val { padding:9px 12px;text-align:right;font-weight:700;color:var(--accent2);font-size:0.9rem; }
+        .grand-val   { padding:9px 12px;text-align:right;font-weight:700;color:var(--text);font-size:1rem; }
+        .break-val   { padding:8px 12px;font-size:0.7rem;color:var(--text3);line-height:1.55; }
+        .bd-trip  { color:var(--warning);font-weight:700; }
+        .bd-breakfast { color:var(--breakfast);font-weight:700; }
+        .bd-lunch     { color:var(--lunch);font-weight:700; }
+        .bd-tea       { color:var(--tea);font-weight:700; }
+        .bd-dinner    { color:var(--dinner);font-weight:700; }
+        .bd-gst    { color:var(--success);font-weight:700; }
+        .bd-eq     { color:var(--text);font-weight:700; }
+        .bd-plus   { color:var(--text3); }
+
+        /* Footer */
+        .etable tfoot td { background:var(--surface2);border-top:2px solid var(--border2);border-right:1px solid var(--border);padding:11px 12px;font-weight:700;font-size:0.84rem;color:var(--text2); }
+        .etable tfoot td:last-child { border-right:none; }
+        .tfoot-sticky { position:sticky;left:0;background:var(--surface2) !important;color:var(--text); }
+        .tfoot-meal  { text-align:right; }
+        .tfoot-food  { text-align:right;color:var(--accent2); }
+        .tfoot-grand { text-align:right;color:var(--text);font-size:0.95rem; }
+
+        /* Summary cards */
+        .food-summary-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-bottom:16px; }
+        .fsc { background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:14px 16px;display:flex;flex-direction:column;gap:5px; }
+        .fsc.accent { border-color:rgba(99,102,241,0.3);background:rgba(99,102,241,0.04); }
+        .fsc.success { border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.04); }
+        .fsc.warn   { border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.04); }
+        .fsc-label { font-size:0.62rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px; }
+        .fsc-val   { font-size:1.3rem;font-weight:700;color:var(--text); }
+        .fsc-sub   { font-size:0.66rem;color:var(--text3); }
+
+        /* No-people */
+        .no-people-box { text-align:center;padding:44px 20px;color:var(--text3); }
+        .no-people-box .npi { font-size:2.4rem;margin-bottom:12px; }
+        .no-people-box p { font-size:0.875rem;line-height:1.6; }
+        .no-people-box strong { color:var(--accent2); }
+
+        @media (max-width:768px) {
+            .app-header { padding:12px 14px; }
+            .tab-bar { padding:0 14px; }
+            .tab-content { padding:16px 14px; }
+            .expense-row { grid-template-columns:1fr 1fr; }
+            .cost-summary-row { grid-template-columns:1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    const SK = 'tripCalc_v5';
+
+    const MEALS = [
+        { id:'breakfast', label:'Breakfast', emoji:'🌅', abbr:'B' },
+        { id:'lunch',     label:'Lunch',     emoji:'☀️',  abbr:'L' },
+        { id:'tea',       label:'Tea',        emoji:'🍵', abbr:'T' },
+        { id:'dinner',    label:'Dinner',     emoji:'🌙', abbr:'D' },
+    ];
+
+    // default per-meal GST config
+    const defaultMealGst = () => ({
+        breakfast: { enabled: false, rate: '5' },
+        lunch:     { enabled: false, rate: '5' },
+        tea:       { enabled: false, rate: '5' },
+        dinner:    { enabled: false, rate: '5' },
+    });
+
+    /* ─────────────────────────────────────────
+       Persisted state
+    ───────────────────────────────────────── */
+    function useAppState() {
+        const [people, setPeople]             = useState([]);
+        const [petrolPrice, setPetrolPrice]   = useState('');
+        const [tollCount, setTollCount]       = useState('');
+        const [tollPrice, setTollPrice]       = useState('15');
+        const [maxDistance, setMaxDistance]   = useState('');
+        const [showResults, setShowResults]   = useState(false);
+        const [calcResults, setCalcResults]   = useState(null);
+        const [showSaved, setShowSaved]       = useState(false);
+        // Food
+        const [activeMeals, setActiveMeals]   = useState(['breakfast','lunch','tea','dinner']);
+        const [mealGst, setMealGst]           = useState(defaultMealGst());
+        const [foodData, setFoodData]         = useState({}); // { personId: { mealId: string } }
+        const isFirst = useRef(true);
+
+        useEffect(() => {
+            try {
+                const d = JSON.parse(localStorage.getItem(SK) || 'null');
+                if (!d) return;
+                if (d.people)       setPeople(d.people);
+                if (d.petrolPrice)  setPetrolPrice(d.petrolPrice);
+                if (d.tollCount)    setTollCount(d.tollCount);
+                if (d.tollPrice)    setTollPrice(d.tollPrice);
+                if (d.maxDistance)  setMaxDistance(d.maxDistance);
+                if (d.showResults)  setShowResults(d.showResults);
+                if (d.calcResults)  setCalcResults(d.calcResults);
+                if (d.activeMeals)  setActiveMeals(d.activeMeals);
+                if (d.mealGst)      setMealGst({ ...defaultMealGst(), ...d.mealGst });
+                if (d.foodData)     setFoodData(d.foodData);
+            } catch {}
+            isFirst.current = false;
+        }, []);
+
+        useEffect(() => {
+            if (isFirst.current) return;
+            localStorage.setItem(SK, JSON.stringify({ people, petrolPrice, tollCount, tollPrice, maxDistance, showResults, calcResults, activeMeals, mealGst, foodData }));
+            setShowSaved(true);
+            const t = setTimeout(() => setShowSaved(false), 1500);
+            return () => clearTimeout(t);
+        }, [people, petrolPrice, tollCount, tollPrice, maxDistance, showResults, calcResults, activeMeals, mealGst, foodData]);
+
+        const clearAll = () => {
+            localStorage.removeItem(SK);
+            setPeople([]); setPetrolPrice(''); setTollCount(''); setTollPrice('15'); setMaxDistance('');
+            setShowResults(false); setCalcResults(null);
+            setActiveMeals(['breakfast','lunch','tea','dinner']);
+            setMealGst(defaultMealGst()); setFoodData({});
+        };
+
+        return {
+            people, setPeople, petrolPrice, setPetrolPrice,
+            tollCount, setTollCount, tollPrice, setTollPrice,
+            maxDistance, setMaxDistance, showResults, setShowResults,
+            calcResults, setCalcResults, showSaved, clearAll,
+            activeMeals, setActiveMeals,
+            mealGst, setMealGst,
+            foodData, setFoodData,
+        };
+    }
+
+    /* ─────────────────────────────────────────
+       Trip tab
+    ───────────────────────────────────────── */
+    function TripExpenses({ petrolPrice, setPetrolPrice, tollCount, setTollCount, tollPrice, setTollPrice, maxDistance, setMaxDistance, setShowResults }) {
+        const petrol = parseFloat(petrolPrice) || 0;
+        const tolls  = (parseInt(tollCount) || 0) * (parseFloat(tollPrice) || 0);
+        const hi = fn => e => { fn(e.target.value); setShowResults(false); };
+        return (
+            <div className="card">
+                <div className="card-title">⛽ Trip Expenses</div>
+                <div className="expense-row">
+                    <div className="form-group"><label>Petrol / Fuel (₹)</label><input type="number" value={petrolPrice} onChange={hi(setPetrolPrice)} placeholder="0.00" min="0" step="0.01"/></div>
+                    <div className="form-group"><label>Toll Count</label><input type="number" value={tollCount} onChange={hi(setTollCount)} placeholder="0" min="0" step="1"/></div>
+                    <div className="form-group"><label>Price per Toll (₹)</label><input type="number" value={tollPrice} onChange={hi(setTollPrice)} min="0" step="0.01"/></div>
+                    <div className="form-group"><label>Max Distance (km)</label><input type="number" value={maxDistance} onChange={hi(setMaxDistance)} placeholder="e.g. 500" min="0" step="1"/></div>
+                </div>
+                <div className="summary-bar">
+                    <div className="summary-item"><div className="summary-label">Petrol</div><div className="summary-value">₹{petrol.toFixed(2)}</div></div>
+                    <div className="summary-item"><div className="summary-label">Tolls</div><div className="summary-value">₹{tolls.toFixed(2)}</div></div>
+                    <div className="summary-item"><div className="summary-label">Total</div><div className="summary-value">₹{(petrol+tolls).toFixed(2)}</div></div>
+                </div>
+            </div>
+        );
+    }
+
+    function PeopleManagement({ people, setPeople, setShowResults }) {
+        const [name, setName]       = useState('');
+        const [dist, setDist]       = useState('');
+        const [editing, setEditing] = useState(null);
+        const add = () => {
+            const n=name.trim(); const d=parseFloat(dist);
+            if (!n) return alert('Enter a name');
+            if (isNaN(d)||d<=0) return alert('Enter valid distance');
+            setPeople([...people, { id:Date.now(), name:n, distance:d, isFixed:false, fixedAmount:0 }]);
+            setName(''); setDist(''); setShowResults(false);
+        };
+        const remove     = id => { setPeople(people.filter(p=>p.id!==id)); setShowResults(false); };
+        const toggleFix  = (id,v) => setPeople(people.map(p=>p.id===id?{...p,isFixed:v,fixedAmount:v?p.fixedAmount:0}:p));
+        const updFix     = (id,v) => setPeople(people.map(p=>p.id===id?{...p,fixedAmount:parseFloat(v)||0}:p));
+        const saveEdit   = () => {
+            const n=editing.name.trim(); const d=parseFloat(editing.distance);
+            if (!n||isNaN(d)||d<=0) return alert('Enter valid name & distance');
+            setPeople(people.map(p=>p.id===editing.id?{...p,name:n,distance:d}:p));
+            setEditing(null); setShowResults(false);
+        };
+        const sorted = [...people].sort((a,b)=>b.distance-a.distance);
+        return (
+            <div className="card">
+                <div className="card-title">👥 People</div>
+                <div className="form-row">
+                    <div className="form-group"><label>Name</label><input type="text" value={name} onChange={e=>setName(e.target.value)} onKeyPress={e=>e.key==='Enter'&&add()} placeholder="Enter name"/></div>
+                    <div className="form-group"><label>Distance (km)</label><input type="number" value={dist} onChange={e=>setDist(e.target.value)} onKeyPress={e=>e.key==='Enter'&&add()} placeholder="e.g. 100" min="0" step="1"/></div>
+                    <button className="btn btn-add" onClick={add}>+ Add</button>
+                </div>
+                <div className="people-list">
+                    {sorted.length===0 ? <div className="no-data">No people added yet</div> : sorted.map(p=>(
+                        <div key={p.id} className={`person-item ${p.isFixed?'fixed-cost':''}`}>
+                            <div className="person-number">{p.distance} km</div>
+                            <div className="person-info">
+                                <div className="person-name">{p.name}</div>
+                                {p.isFixed && <div className="person-fixed">Fixed: ₹{p.fixedAmount.toFixed(2)}</div>}
+                            </div>
+                            <div className="checkbox-fixed"><input type="checkbox" checked={p.isFixed} onChange={e=>toggleFix(p.id,e.target.checked)}/> Fixed</div>
+                            {p.isFixed ? <input type="number" className="fixed-input" value={p.fixedAmount||''} onChange={e=>updFix(p.id,e.target.value)} placeholder="₹"/> : <div/>}
+                            <div className="action-btns">
+                                <button className="btn btn-edit" onClick={()=>setEditing({...p})}>Edit</button>
+                                <button className="btn btn-danger" onClick={()=>remove(p.id)}>✕</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                {editing && (
+                    <div className="edit-modal show" onClick={e=>e.target.className.includes('edit-modal')&&setEditing(null)}>
+                        <div className="edit-modal-content">
+                            <div className="edit-modal-title">Edit Person</div>
+                            <div className="edit-modal-row">
+                                <div className="form-group"><label>Name</label><input type="text" value={editing.name} onChange={e=>setEditing({...editing,name:e.target.value})}/></div>
+                                <div className="form-group"><label>Distance (km)</label><input type="number" value={editing.distance} onChange={e=>setEditing({...editing,distance:e.target.value})} min="0" step="1"/></div>
+                            </div>
+                            <div className="edit-modal-actions">
+                                <button className="btn btn-ghost" onClick={()=>setEditing(null)}>Cancel</button>
+                                <button className="btn btn-add" onClick={saveEdit}>Save</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    function Results({ results }) {
+        if (!results) return null;
+        const { totalCost, totalFixed, remainingCost, actualMaxDistance, costPerKm, personCosts, segments, diff, nonFixedCount, fixedCount } = results;
+        const sorted = Object.values(personCosts).sort((a,b)=>b.distance-a.distance);
+        const totalCalc = Object.values(personCosts).reduce((s,p)=>s+p.totalCost, 0);
+        let idx = 1;
+        return (
+            <div className="card">
+                <div className="card-title">📊 Results</div>
+                <div className="cost-summary-box">
+                    <div className="cost-summary-row">
+                        <div className="cost-summary-item"><div className="cost-summary-label">Total Cost</div><div className="cost-summary-value">₹{totalCost.toFixed(2)}</div></div>
+                        <div className="cost-summary-item"><div className="cost-summary-label">Fixed</div><div className="cost-summary-value">₹{totalFixed.toFixed(2)}</div></div>
+                        <div className="cost-summary-item"><div className="cost-summary-label">To Split</div><div className="cost-summary-value">₹{remainingCost.toFixed(2)}</div></div>
+                        <div className="cost-summary-item"><div className="cost-summary-label">Per KM</div><div className="cost-summary-value">₹{(costPerKm||0).toFixed(3)}</div></div>
+                    </div>
+                </div>
+                <div className="trip-info">Max Distance: <strong>{actualMaxDistance.toFixed(0)} km</strong></div>
+                <table className="split-table">
+                    <thead><tr><th>#</th><th>Name</th><th>Distance</th><th>Type</th><th>Amount</th></tr></thead>
+                    <tbody>
+                        {sorted.filter(p=>p.isFixed).map(p=>(
+                            <tr key={p.id} className="fixed-row">
+                                <td>{idx++}</td><td>{p.name}</td><td>{p.distance} km</td>
+                                <td><span className="fixed-badge">Fixed</span></td>
+                                <td>₹{p.totalCost.toFixed(2)}</td>
+                            </tr>
+                        ))}
+                        {sorted.filter(p=>!p.isFixed).map(p=>(
+                            <tr key={p.id}>
+                                <td>{idx++}</td><td>{p.name}</td><td>{p.distance} km</td>
+                                <td>Split</td><td>₹{p.totalCost.toFixed(2)}</td>
+                            </tr>
+                        ))}
+                        <tr className="total-row"><td></td><td><strong>TOTAL</strong></td><td></td><td></td><td>₹{totalCalc.toFixed(2)}</td></tr>
+                    </tbody>
+                </table>
+                <div className="verify-box">
+                    <div className="verify-title">✓ Verification</div>
+                    <div className="check-item">{diff<0.01?'✓':'✗'} Shares (₹{totalCalc.toFixed(2)}) = Total (₹{totalCost.toFixed(2)})</div>
+                    <div className="check-item">✓ Fixed: ₹{totalFixed.toFixed(2)} ({fixedCount} people)</div>
+                    <div className="check-item">✓ Split: ₹{remainingCost.toFixed(2)} ({nonFixedCount} people)</div>
+                </div>
+                {segments.length > 0 && (
+                    <div className="segment-box">
+                        <div className="segment-title">How Remaining is Split</div>
+                        {segments.map((seg,i)=>(
+                            <div key={i} className="segment-item">
+                                <div>{seg.start}-{seg.end} km<br/>{seg.travelers.map((t,j)=><span key={j} className="segment-badge">{t}</span>)}</div>
+                                <div className="segment-cost">₹{seg.costPerPerson.toFixed(2)} each</div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <div className="card-title" style={{marginTop:'16px'}}>👤 Individual Summary</div>
+                {Object.values(personCosts).sort((a,b)=>b.totalCost-a.totalCost).map((p,i)=>{
+                    const pct = totalCost>0?(p.totalCost/totalCost)*100:0;
+                    return (
+                        <div key={p.id} className={`result-card ${p.isFixed?'fixed-cost':''}`}>
+                            <div className="result-header">
+                                <div className="result-person">
+                                    <div className={`result-number ${p.isFixed?'fixed':''}`}>{i+1}</div>
+                                    <div>
+                                        <div className="result-name">{p.name}</div>
+                                        <div className="result-distance">{p.distance} km</div>
+                                        {p.isFixed&&<div className="result-fixed-label">Fixed Amount</div>}
+                                    </div>
+                                </div>
+                                <div className="result-amount">
+                                    <div className="result-share">₹{p.totalCost.toFixed(2)}</div>
+                                    <div className="result-percent">{pct.toFixed(1)}%</div>
+                                </div>
+                            </div>
+                            <div className="progress-bar"><div className={`progress-fill ${p.isFixed?'fixed':''}`} style={{width:`${pct}%`}}></div></div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    }
+
+    /* ─────────────────────────────────────────
+       Food Tab
+    ───────────────────────────────────────── */
+    function FoodTab({ people, calcResults, activeMeals, setActiveMeals, mealGst, setMealGst, foodData, setFoodData }) {
+
+        const toggleMeal = id => {
+            setActiveMeals(prev => {
+                const next = prev.includes(id) ? prev.filter(m=>m!==id) : [...prev, id];
+                return MEALS.map(m=>m.id).filter(m=>next.includes(m));
+            });
+        };
+
+        // mealGst updaters
+        const toggleGst = mealId =>
+            setMealGst(prev => ({ ...prev, [mealId]: { ...prev[mealId], enabled: !prev[mealId].enabled } }));
+
+        const setRate = (mealId, rate) =>
+            setMealGst(prev => ({ ...prev, [mealId]: { ...prev[mealId], rate } }));
+
+        // food data
+        const setVal = (pid, mid, v) =>
+            setFoodData(prev => ({ ...prev, [pid]: { ...(prev[pid]||{}), [mid]: v } }));
+
+        const getBase = (pid, mid) => parseFloat((foodData[pid]||{})[mid]||'') || 0;
+
+        // GST amount for one person, one meal
+        const getMealGstAmt = (pid, mid) => {
+            const g = mealGst[mid];
+            if (!g || !g.enabled) return 0;
+            const base = getBase(pid, mid);
+            if (!base) return 0;
+            return base * (parseFloat(g.rate) || 0) / 100;
+        };
+
+        // total for one meal (base + gst)
+        const getMealTotal = (pid, mid) => getBase(pid, mid) + getMealGstAmt(pid, mid);
+
+        // food subtotal (all active meals with their GST)
+        const getFoodSub = pid => activeMeals.reduce((s, mid) => s + getMealTotal(pid, mid), 0);
+
+        const getTripCost = pid => {
+            if (!calcResults) return null;
+            const pc = calcResults.personCosts[pid];
+            return pc ? pc.totalCost : 0;
+        };
+
+        const getGrand = pid => (getTripCost(pid) || 0) + getFoodSub(pid);
+
+        // Build breakdown
+        const getBreakdown = pid => {
+            const parts = [];
+            const trip = getTripCost(pid);
+            if (trip !== null && trip > 0) parts.push({ val: Math.round(trip), label: 'T', cls: 'trip' });
+            activeMeals.forEach(mid => {
+                const meal = MEALS.find(m=>m.id===mid);
+                const base = getBase(pid, mid);
+                const gstA = getMealGstAmt(pid, mid);
+                if (base > 0) {
+                    const totalMeal = Math.round(base + gstA);
+                    if (gstA > 0) {
+                        parts.push({ val: totalMeal, label: `${meal.abbr}+GST`, cls: mid });
+                    } else {
+                        parts.push({ val: Math.round(base), label: meal.abbr, cls: mid });
+                    }
+                }
+            });
+            const grand = Math.round(getGrand(pid));
+            return { parts, grand };
+        };
+
+        // Column foot sums
+        const mealBaseSum = mid => people.reduce((s,p)=>s+getBase(p.id,mid), 0);
+        const mealGstSum  = mid => people.reduce((s,p)=>s+getMealGstAmt(p.id,mid), 0);
+        const mealTotSum  = mid => people.reduce((s,p)=>s+getMealTotal(p.id,mid), 0);
+        const totalFoodAll  = people.reduce((s,p)=>s+getFoodSub(p.id), 0);
+        const totalGrandAll = people.reduce((s,p)=>s+getGrand(p.id), 0);
+        const totalTripAll  = people.reduce((s,p)=>s+(getTripCost(p.id)||0), 0);
+        const totalGstAll   = people.reduce((s,p)=> s + activeMeals.reduce((ss,mid)=>ss+getMealGstAmt(p.id,mid),0), 0);
+
+        const avatarColor = name => {
+            const cols=['#6366f1','#10b981','#f97316','#38bdf8','#a78bfa','#f59e0b','#ef4444','#22c55e'];
+            let h=0; for(let i=0;i<name.length;i++) h=name.charCodeAt(i)+((h<<5)-h);
+            return cols[Math.abs(h)%cols.length];
+        };
+
+        const hasTripData = !!calcResults;
+        const anyGstEnabled = activeMeals.some(mid => mealGst[mid]?.enabled);
+
+        return (
+            <div>
+                {/* Column toggles */}
+                <div className="food-toolbar">
+                    <span className="toolbar-label">Show Columns</span>
+                    {MEALS.map(meal => (
+                        <button
+                            key={meal.id}
+                            className={`meal-toggle-btn ${activeMeals.includes(meal.id)?`active ${meal.id}`:''}`}
+                            onClick={()=>toggleMeal(meal.id)}
+                        >
+                            <span className={`meal-dot ${meal.id}`}></span>
+                            {meal.emoji} {meal.label}
+                        </button>
+                    ))}
+                    <div className="toolbar-divider"/>
+                    <span style={{fontSize:'0.7rem',color:'var(--text3)'}}>
+                        {hasTripData
+                            ? '✓ Trip costs loaded from Tab 1'
+                            : '⚠️ Calculate trip first to see trip costs'}
+                    </span>
+                </div>
+
+                {people.length === 0 ? (
+                    <div className="excel-wrap">
+                        <div className="no-people-box">
+                            <div className="npi">👥</div>
+                            <p>No people added yet.<br/>Go to <strong>Trip Calculator</strong> tab → add people → come back here.</p>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                    <div className="excel-wrap">
+                        <div className="excel-scroll">
+                            <table className="etable">
+                                <thead>
+                                    <tr className="head-row">
+                                        {/* Name — sticky */}
+                                        <th style={{position:'sticky',left:0,zIndex:3,background:'var(--surface2)'}}>
+                                            <div className="th-box"><span className="th-name col-name">👤 Name</span></div>
+                                        </th>
+                                        {/* Dist */}
+                                        <th><div className="th-box"><span className="th-name col-dist">📍 Dist</span><span className="th-hint">km</span></div></th>
+                                        {/* Type */}
+                                        <th><div className="th-box"><span className="th-name col-type">Type</span></div></th>
+                                        {/* Trip cost */}
+                                        <th><div className="th-box"><span className="th-name col-trip">🚗 Trip Cost</span><span className="th-hint">from Tab 1</span></div></th>
+
+                                        {/* ── Meal columns with per-column GST ── */}
+                                        {MEALS.filter(m=>activeMeals.includes(m.id)).map(meal => {
+                                            const g = mealGst[meal.id];
+                                            return (
+                                                <th key={meal.id} className="td-meal">
+                                                    <div className="th-box">
+                                                        <span className={`th-name ${meal.id}`}>{meal.emoji} {meal.label}</span>
+                                                        <span className="th-hint">leave blank if N/A</span>
+                                                        {/* GST control */}
+                                                        <div className="th-gst-ctrl">
+                                                            <label className={`gst-chk-label ${g.enabled?'on':''}`} onClick={e=>e.stopPropagation()}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={g.enabled}
+                                                                    onChange={()=>toggleGst(meal.id)}
+                                                                />
+                                                                GST
+                                                            </label>
+                                                            {g.enabled ? (
+                                                                <>
+                                                                    <input
+                                                                        type="number"
+                                                                        className="gst-rate-box"
+                                                                        value={g.rate}
+                                                                        onChange={e=>setRate(meal.id,e.target.value)}
+                                                                        min="0" max="100" step="0.5"
+                                                                        onClick={e=>e.stopPropagation()}
+                                                                    />
+                                                                    <span className="gst-pct-label">%</span>
+                                                                    <span className="gst-active-pill">ON</span>
+                                                                </>
+                                                            ) : (
+                                                                <span style={{fontSize:'0.58rem',color:'var(--text3)'}}>off</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </th>
+                                            );
+                                        })}
+
+                                        {/* Food subtotal */}
+                                        <th className="td-foodsub">
+                                            <div className="th-box">
+                                                <span className="th-name col-food">🍽 Food</span>
+                                                <span className="th-hint">{anyGstEnabled?'incl. GST':'subtotal'}</span>
+                                            </div>
+                                        </th>
+                                        {/* Grand Total */}
+                                        <th className="td-grandtot">
+                                            <div className="th-box">
+                                                <span className="th-name col-total">💰 Total</span>
+                                                <span className="th-hint">trip + food</span>
+                                            </div>
+                                        </th>
+                                        {/* Breakdown */}
+                                        <th className="td-breakdown">
+                                            <div className="th-box"><span className="th-name col-break">Breakdown</span></div>
+                                        </th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {people.map(person => {
+                                        const trip    = getTripCost(person.id);
+                                        const foodSub = getFoodSub(person.id);
+                                        const grand   = getGrand(person.id);
+                                        const bd      = getBreakdown(person.id);
+                                        return (
+                                            <tr key={person.id}>
+                                                {/* Name */}
+                                                <td className="td-sticky">
+                                                    <div className="name-inner">
+                                                        <div className="name-avatar" style={{background:avatarColor(person.name)}}>{person.name.charAt(0).toUpperCase()}</div>
+                                                        <span className="name-label">{person.name}</span>
+                                                    </div>
+                                                </td>
+                                                {/* Dist */}
+                                                <td><div className="td-plain">{person.distance}</div></td>
+                                                {/* Type */}
+                                                <td><div className="td-plain"><span className={person.isFixed?'type-fixed':'type-split'}>{person.isFixed?'Fixed':'Split'}</span></div></td>
+                                                {/* Trip cost */}
+                                                <td><div className="td-plain td-right">
+                                                    {trip !== null
+                                                        ? <span className="trip-val">₹{trip.toFixed(2)}</span>
+                                                        : <span style={{color:'var(--text3)',fontSize:'0.75rem'}}>—</span>}
+                                                </div></td>
+
+                                                {/* Meal columns */}
+                                                {MEALS.filter(m=>activeMeals.includes(m.id)).map(meal => {
+                                                    const base   = getBase(person.id, meal.id);
+                                                    const gstAmt = getMealGstAmt(person.id, meal.id);
+                                                    const g      = mealGst[meal.id];
+                                                    return (
+                                                        <td key={meal.id} className="td-meal">
+                                                            <div className="meal-cell-wrap">
+                                                                <input
+                                                                    type="number"
+                                                                    className="meal-inp"
+                                                                    value={(foodData[person.id]||{})[meal.id]||''}
+                                                                    onChange={e=>setVal(person.id, meal.id, e.target.value)}
+                                                                    placeholder="—"
+                                                                    min="0" step="0.01"
+                                                                />
+                                                                {/* Show GST sub-row only if GST is ON for this meal and there's a value */}
+                                                                {g.enabled && base > 0 && (
+                                                                    <div className="gst-sub-row">
+                                                                        <span className="gst-sub-tag">+{g.rate}%</span>
+                                                                        <span className="gst-sub-val">₹{gstAmt.toFixed(2)}</span>
+                                                                    </div>
+                                                                )}
+                                                                {/* Show "GST: off" hint only if GST column is off */}
+                                                                {!g.enabled && (
+                                                                    <div style={{padding:'1px 10px 5px',textAlign:'right',fontSize:'0.58rem',color:'var(--text3)'}}>
+                                                                        no GST
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    );
+                                                })}
+
+                                                {/* Food subtotal */}
+                                                <td className="td-foodsub"><div className="foodsub-val">₹{foodSub.toFixed(2)}</div></td>
+                                                {/* Grand total */}
+                                                <td className="td-grandtot"><div className="grand-val">₹{grand.toFixed(2)}</div></td>
+                                                {/* Breakdown */}
+                                                <td className="td-breakdown">
+                                                    <div className="break-val">
+                                                        {bd.parts.length === 0
+                                                            ? <span style={{color:'var(--text3)'}}>—</span>
+                                                            : <>
+                                                                {bd.parts.map((p,i) => (
+                                                                    <span key={i}>
+                                                                        {i > 0 && <span className="bd-plus"> + </span>}
+                                                                        <span className={`bd-${p.cls}`}>{p.val}({p.label})</span>
+                                                                    </span>
+                                                                ))}
+                                                                <span className="bd-eq"> = {bd.grand}</span>
+                                                            </>
+                                                        }
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+
+                                <tfoot>
+                                    <tr>
+                                        <td className="tfoot-sticky">TOTALS</td>
+                                        <td></td><td></td>
+                                        <td className="tfoot-meal" style={{color:'var(--warning)'}}>₹{totalTripAll.toFixed(2)}</td>
+                                        {MEALS.filter(m=>activeMeals.includes(m.id)).map(meal => {
+                                            const g = mealGst[meal.id];
+                                            return (
+                                                <td key={meal.id} className="tfoot-meal">
+                                                    <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'2px'}}>
+                                                        <span>₹{mealBaseSum(meal.id).toFixed(2)}</span>
+                                                        {g.enabled && <span style={{fontSize:'0.65rem',color:'var(--success)'}}>+₹{mealGstSum(meal.id).toFixed(2)} GST</span>}
+                                                    </div>
+                                                </td>
+                                            );
+                                        })}
+                                        <td className="tfoot-food">₹{totalFoodAll.toFixed(2)}</td>
+                                        <td className="tfoot-grand">₹{totalGrandAll.toFixed(2)}</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Summary Cards */}
+                    <div className="food-summary-grid">
+                        <div className="fsc warn">
+                            <div className="fsc-label">🚗 Trip Total</div>
+                            <div className="fsc-val">₹{totalTripAll.toFixed(2)}</div>
+                            <div className="fsc-sub">{hasTripData?'from calculator':'—'}</div>
+                        </div>
+                        <div className="fsc">
+                            <div className="fsc-label">🍽 Food Total</div>
+                            <div className="fsc-val">₹{totalFoodAll.toFixed(2)}</div>
+                            <div className="fsc-sub">{activeMeals.length} meals · {people.length} people</div>
+                        </div>
+                        {anyGstEnabled && (
+                            <div className="fsc accent">
+                                <div className="fsc-label">📋 GST Collected</div>
+                                <div className="fsc-val">₹{totalGstAll.toFixed(2)}</div>
+                                <div className="fsc-sub">
+                                    {activeMeals.filter(mid=>mealGst[mid]?.enabled).map(mid=>{
+                                        const meal = MEALS.find(m=>m.id===mid);
+                                        return `${meal.label}(${mealGst[mid].rate}%)`;
+                                    }).join(', ')}
+                                </div>
+                            </div>
+                        )}
+                        <div className="fsc success">
+                            <div className="fsc-label">💰 Grand Total</div>
+                            <div className="fsc-val">₹{totalGrandAll.toFixed(2)}</div>
+                            <div className="fsc-sub">trip + food{anyGstEnabled?' + GST':''}</div>
+                        </div>
+                    </div>
+                    </>
+                )}
+            </div>
+        );
+    }
+
+    /* ─────────────────────────────────────────
+       Root App
+    ───────────────────────────────────────── */
+    function App() {
+        const [tab, setTab] = useState('trip');
+        const s = useAppState();
+
+        const calculate = () => {
+            if (s.people.length===0) return alert('Please add at least one person');
+            const petrol=parseFloat(s.petrolPrice)||0;
+            const tCount=parseInt(s.tollCount)||0;
+            const tPrice=parseFloat(s.tollPrice)||15;
+            const mDist =parseFloat(s.maxDistance)||0;
+            if (petrol<=0&&tCount<=0) return alert('Please enter trip expenses');
+            const amd = mDist>0 ? mDist : Math.max(...s.people.map(p=>p.distance));
+            if (amd<=0) return alert('Please enter the maximum distance');
+            const tollCost=tCount*tPrice, totalCost=petrol+tollCost;
+            const totalFixed=s.people.filter(p=>p.isFixed).reduce((sum,p)=>sum+(p.fixedAmount||0),0);
+            const remainingCost=totalCost-totalFixed;
+            if (remainingCost<0) return alert('Fixed amounts exceed total cost!');
+            const nf=s.people.filter(p=>!p.isFixed);
+            let costPerKm=0, segs=[], pc={};
+            s.people.forEach(p=>{ pc[p.id]={id:p.id,name:p.name,distance:p.distance,totalCost:p.isFixed?p.fixedAmount:0,isFixed:p.isFixed,fixedAmount:p.fixedAmount}; });
+            if (nf.length>0&&remainingCost>0) {
+                costPerKm=remainingCost/amd;
+                const sNF=[...nf].sort((a,b)=>b.distance-a.distance);
+                const pts=[0,...new Set(sNF.map(p=>p.distance))].sort((a,b)=>a-b);
+                for(let i=0;i<pts.length-1;i++){
+                    const [st,en]=[pts[i],pts[i+1]],d=en-st;
+                    const tr=sNF.filter(p=>p.distance>=en);
+                    if(tr.length>0&&d>0){const sc=d*costPerKm;segs.push({start:st,end:en,distance:d,travelers:tr.map(t=>t.name),numTravelers:tr.length,totalCost:sc,costPerPerson:sc/tr.length});}
+                }
+                segs.forEach(seg=>seg.travelers.forEach(name=>{const p=s.people.find(p=>p.name===name&&!p.isFixed);if(p&&pc[p.id])pc[p.id].totalCost+=seg.costPerPerson;}));
+            }
+            const tc=Object.values(pc).reduce((s,p)=>s+p.totalCost,0);
+            s.setCalcResults({totalCost,totalFixed,remainingCost,actualMaxDistance:amd,costPerKm,segments:segs,personCosts:pc,diff:Math.abs(tc-totalCost),nonFixedCount:nf.length,fixedCount:s.people.filter(p=>p.isFixed).length,allFixed:nf.length===0});
+            s.setShowResults(true);
+        };
+
+        const reset=()=>{s.setPeople([]);s.setPetrolPrice('');s.setTollCount('');s.setTollPrice('15');s.setMaxDistance('');s.setShowResults(false);};
+
+        return (
+            <div className="app-shell">
+                <header className="app-header">
+                    <div className="app-logo">
+                        <div className="app-logo-icon">🚗</div>
+                        <div>
+                            <h1>Trip Cost Calculator</h1>
+                            <p>Split fairly by distance · Track food · Per-meal GST</p>
+                        </div>
+                    </div>
+                    <div style={{display:'flex',gap:'10px',alignItems:'center'}}>
+                        <span className={`saved-indicator ${s.showSaved?'show':''}`}>✓ saved</span>
+                        <button className="btn btn-warning" onClick={()=>confirm('Clear all data?')&&s.clearAll()}>🗑 Clear Cache</button>
+                    </div>
+                </header>
+
+                <nav className="tab-bar">
+                    <button className={`tab-btn ${tab==='trip'?'active':''}`} onClick={()=>setTab('trip')}>
+                        🚗 Trip Calculator {s.calcResults&&<span className="tab-badge">Done</span>}
+                    </button>
+                    <button className={`tab-btn ${tab==='food'?'active':''}`} onClick={()=>setTab('food')}>
+                        🍽 Food Expenses {s.people.length>0&&<span className="tab-badge">{s.people.length} people</span>}
+                    </button>
+                </nav>
+
+                <main className="tab-content">
+                    {tab==='trip' && (
+                        <div>
+                            <TripExpenses petrolPrice={s.petrolPrice} setPetrolPrice={s.setPetrolPrice} tollCount={s.tollCount} setTollCount={s.setTollCount} tollPrice={s.tollPrice} setTollPrice={s.setTollPrice} maxDistance={s.maxDistance} setMaxDistance={s.setMaxDistance} setShowResults={s.setShowResults}/>
+                            <PeopleManagement people={s.people} setPeople={s.setPeople} setShowResults={s.setShowResults}/>
+                            <div className="button-group">
+                                <button className="btn btn-primary" onClick={calculate}>⚡ Calculate Split</button>
+                                <button className="btn btn-ghost" onClick={reset}>Reset</button>
+                            </div>
+                            {s.showResults && <Results results={s.calcResults}/>}
+                        </div>
+                    )}
+                    {tab==='food' && (
+                        <FoodTab
+                            people={s.people} calcResults={s.calcResults}
+                            activeMeals={s.activeMeals} setActiveMeals={s.setActiveMeals}
+                            mealGst={s.mealGst} setMealGst={s.setMealGst}
+                            foodData={s.foodData} setFoodData={s.setFoodData}
+                        />
+                    )}
+                </main>
+            </div>
+        );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
